@@ -13,7 +13,13 @@ namespace ClienteConcentrese
         public const int EN_TURNO = 1;
         public const int ESPERANDO_TURNO_OPONENTE = 3;
         public const string JUGADOR = "JUGADOR";
+        public const string JUGADA = "JUGADA";
+        public const string FALLO = "FALLO";
+        public const string PAREJA = "PAREJA";
+        public const string PRIMERA_JUGADA = "PRIMERA_JUGADA";
+        public const string SEGUNDA_JUGADA= "SEGUNDA_JUGADA";
 
+        public string Jugada { get; set; }
         public string Nombre { get; set; }
         public string Host { get; set; }
         public int Puerto { get; set; }
@@ -30,6 +36,7 @@ namespace ClienteConcentrese
             Host = host;
             Puerto = puerto;
             cliente = new TcpClient();
+            Jugada = PRIMERA_JUGADA;
         }
 
         public void Conectar()
@@ -102,6 +109,56 @@ namespace ClienteConcentrese
             datos = Encoding.ASCII.GetString(bytes, 0, i);
             return datos;
         }
+        private void jugar(int casilla)
+        {
+            
+            if (EstadoJuego == EN_TURNO)
+            {
+                if(Jugada == PRIMERA_JUGADA)
+                {
+                    Primerajugada(casilla);
+                    string mensaje = new StringBuilder().Append(JUGADA).Append(":").Append(casilla).ToString();
+                    EnviarDatos(mensaje);
+
+                }
+                else
+                {
+                    bool resultado = Segundajugada(casilla);
+                    string mensaje = new StringBuilder().Append(JUGADA).Append(":").Append(casilla).ToString();
+                    EnviarDatos(mensaje);
+                    string mensajeResultado = resultado ? PAREJA : FALLO;
+                    EnviarDatos(mensajeResultado);
+                }
+            }
+
+            else if (EstadoJuego == ESPERANDO_TURNO_OPONENTE)
+            {
+                if(Jugada == PRIMERA_JUGADA)
+                {
+                    int jugada = int.Parse(RecibirDatos().Split(':')[1]);
+                    TableroJuego.SeleccionarPrimeraCasilla(jugada);
+                }
+                else
+                {
+                    int jugada = int.Parse(RecibirDatos().Split(':')[1]);
+                    TableroJuego.SeleccionarSegundaCasilla(jugada);
+                    string resultado = RecibirDatos();
+                }
+            }
+         
+           
+        }
+        private void Primerajugada(int casilla)
+        {
+            TableroJuego.SeleccionarPrimeraCasilla(casilla);
+            Jugada = SEGUNDA_JUGADA;
+        }
         
+        private bool Segundajugada(int casilla)
+        {
+            Jugada = PRIMERA_JUGADA;
+            EstadoJuego = EstadoJuego == ESPERANDO_TURNO_OPONENTE ? EN_TURNO : ESPERANDO_TURNO_OPONENTE ;
+            return TableroJuego.SeleccionarSegundaCasilla(casilla);
+        }
     }
 }
